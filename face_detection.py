@@ -4,9 +4,10 @@ from keras_vggface.vggface import VGGFace
 
 image_path = "face_test.jpg"
 
-face_cascade = cv2.CascadeClassifier(haarcascades + 'haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier(
+    haarcascades + 'haarcascade_frontalface_default.xml')
 
-image = cv2.imread(image_path)
+# image = cv2.imread(image_path)
 
 
 def detect_faces(img):
@@ -26,7 +27,32 @@ def show_image(img):
     cv2.destroyAllWindows()
 
 
-detect_faces(image)
-show_image(image)
+def cleanup(stream):
+    stream.release()
+    cv2.waitKey(1)
+    cv2.destroyAllWindows()
+    cv2.waitKey(1)
 
-model = VGGFace(model='senet50')  # vgg16 is default, could avoid the param altogether
+
+def run_webcam():
+    stream = cv2.VideoCapture(0)
+
+    while(True):
+        (grabbed, frame) = stream.read()
+        detect_faces(frame)
+        # show the frame
+        cv2.imshow("Image", frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):    # Press q to break out
+            break
+
+    cleanup()
+
+
+run_webcam()
+
+# detect_faces(image)
+# show_image(image)
+
+# vgg16 is default, could avoid the param altogether
+# model = VGGFace(model='senet50')
