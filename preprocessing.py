@@ -18,7 +18,8 @@ target_image_width = 224
 target_image_height = 224
 
 # for detecting faces
-face_cascade = cv2.CascadeClassifier(haarcascades + 'haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier(
+    haarcascades + 'haarcascade_frontalface_default.xml')
 image_dir = os.path.join(".", data_folder)
 
 current_id = 0
@@ -28,6 +29,7 @@ for root, _, files in os.walk(image_dir):
     for file in files:
         if file.endswith('png') or file.endswith('jpg') or file.endswith('jpeg'):
             path = os.path.join(root, file)
+            print('path => ', path)
             label = os.path.basename(root).replace(" ", ".").lower()
 
             if not label in label_ids:
@@ -39,12 +41,15 @@ for root, _, files in os.walk(image_dir):
 
             faces = detect_faces(face_cascade)
 
+            print('faces => ', len(faces))
+
             if len(faces) != 1:
                 print('photo skipped...')
 
             # os.remove(path)
             for (x_, y_, w, h) in faces:
-                face_detect = cv2.rectangle(imgtest, (x_, y_), (x_ + w, y_ + h), (255, 0, 255), 2)
+                face_detect = cv2.rectangle(
+                    imgtest, (x_, y_), (x_ + w, y_ + h), (255, 0, 255), 2)
                 # plt.imshow(face_detect)
                 # plt.show()
 
@@ -52,7 +57,11 @@ for root, _, files in os.walk(image_dir):
 
                 roi = image_array[y_: y_ + h, x_: x_ + w]
 
+                print("roi => ", roi)
+                if len(roi) < 1:
+                    continue
+
                 resized_image = cv2.resize(roi, size)
                 image_array = np.array(resized_image, 'uint8')
                 im = Image.fromarray(image_array)
-                im.save(os.path.join("cleaned_data/kobe_bryant/", file))
+                im.save(os.path.join("cleaned_data/marlon/", file))

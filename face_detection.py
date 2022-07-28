@@ -1,6 +1,6 @@
 import cv2
 from cv2.data import haarcascades
-from keras_vggface.vggface import VGGFace
+from utils import predict_faces, get_class_list, load_local_model, get_face_cascade, SAVE_PATH
 
 image_path = "face_test.jpg"
 
@@ -36,10 +36,17 @@ def cleanup(stream):
 
 def run_webcam():
     stream = cv2.VideoCapture(0)
+    class_list = get_class_list()
+
+    model = load_local_model(SAVE_PATH)
+
+    face_cascade = get_face_cascade()
 
     while(True):
-        (grabbed, frame) = stream.read()
-        detect_faces(frame)
+        (_, frame) = stream.read()
+        # detect_faces(frame)
+        prediction = predict_faces(model, face_cascade, class_list, frame)
+        print("PREDICTION: ", prediction)
         # show the frame
         cv2.imshow("Image", frame)
         key = cv2.waitKey(1) & 0xFF

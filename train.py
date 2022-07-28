@@ -19,6 +19,7 @@ import cv2
 DATA_PATH = "./cleaned_data"
 SAVE_PATH = "./models"
 CLASS_DICT_SAVE_PATH = "face-labels.pickle"
+EPOCHS = 20
 
 
 def new_train_generator(data_path):
@@ -100,10 +101,10 @@ def train():
     model.fit(train_generator,
               batch_size=1,
               verbose=1,
-              epochs=5)
+              epochs=EPOCHS)
 
     save_model(model, SAVE_PATH)
-    save_training_labels(train_generator)
+    save_training_labels(train_generator, CLASS_DICT_SAVE_PATH)
 
 
 def test():
@@ -118,7 +119,7 @@ def test():
     face_cascade = cv2.CascadeClassifier(
         haarcascades + 'haarcascade_frontalface_default.xml')
 
-    imgtest = cv2.imread("./data/kobe_bryant/977.png", cv2.IMREAD_COLOR)
+    imgtest = cv2.imread("./data/marlon/IMG-3064.jpg", cv2.IMREAD_COLOR)
     image_array = np.array(imgtest, "uint8")
 
     # get the faces detected in the image
@@ -151,4 +152,5 @@ def test():
         print("============================\n")
 
 
+# train()
 test()
