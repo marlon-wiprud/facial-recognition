@@ -2,15 +2,48 @@ import cv2
 import os
 import numpy as np
 from PIL import Image
-from service.utils import get_faces, maybe_create_dir, get_face_cascade
+from service.utils import get_faces, maybe_create_dir, get_face_cascade, IMAGE_HEIGHT, IMAGE_WIDTH
+import random
+
+
+def zoom(img, value):
+    if value > 1 or value < 0:
+        print('Value for zoom should be less than 1 and greater than 0')
+        return img
+    value = random.uniform(value, 1)
+    h, w = img.shape[:2]
+    h_taken = int(value*h)
+    w_taken = int(value*w)
+    h_start = random.randint(0, h-h_taken)
+    w_start = random.randint(0, w-w_taken)
+    img = img[h_start:h_start+h_taken, w_start:w_start+w_taken, :]
+    img = cv2.resize(img, (h, w), cv2.INTER_CUBIC)
+    return img
+
+
+def preview_imgs(*imgs):
+    show_img = np.zeros((IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8)
+
+    for img in imgs:
+        show_img = np.concatenate((show_img, img), axis=1)
+
+    cv2.imshow('Result', show_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def augment_by_path(file_path):
+    img = cv2.imread(file_path, cv2.IMREAD_COLOR)
+    return img, augment_face(img.copy())
+
+
+def augment_face(img):
+    return zoom(img, 0.5)
 
 
 def preprocess_data():
 
     data_folder = "data"
-    # dimension of images
-    target_image_width = 224
-    target_image_height = 224
 
     # for detecting faces
     face_cascade = get_face_cascade()
@@ -51,7 +84,7 @@ def preprocess_data():
                         # face_detect = cv2.rectangle(
                         #     img, (x_, y_), (x_ + w, y_ + h), (255, 0, 255), 2)
 
-                        size = (target_image_width, target_image_height)
+                        size = (IMAGE_WIDTH, IMAGE_HEIGHT)
 
                         roi = image_array[y_: y_ + h, x_: x_ + w]
 
