@@ -1,6 +1,6 @@
 import cv2
 from cv2.data import haarcascades
-from utils import predict_faces, get_class_list, load_local_model, get_face_cascade, SAVE_PATH
+from src.service.utils import predict_faces, get_class_list, load_local_model, get_face_cascade, SAVE_PATH
 
 image_path = "face_test.jpg"
 
@@ -46,6 +46,7 @@ def run_webcam():
         (_, frame) = stream.read()
         # detect_faces(frame)
         prediction = predict_faces(model, face_cascade, class_list, frame)
+
         print("PREDICTION: ", prediction)
         # show the frame
         cv2.imshow("Image", frame)

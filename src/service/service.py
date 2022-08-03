@@ -11,15 +11,15 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.optimizers import Adam
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
-
 import pickle
 from cv2.data import haarcascades
 import cv2
+from service.utils import predict_faces, get_class_list, get_face_cascade, IMAGE_HEIGHT, IMAGE_WIDTH
 
 DATA_PATH = "./cleaned_data"
 SAVE_PATH = "./models"
 CLASS_DICT_SAVE_PATH = "face-labels.pickle"
-EPOCHS = 20
+EPOCHS = 40
 
 
 def new_train_generator(data_path):
@@ -107,50 +107,16 @@ def train():
     save_training_labels(train_generator, CLASS_DICT_SAVE_PATH)
 
 
-def test():
-    image_width = 224
-    image_height = 224
+def recognize_face():
 
-    class_dict = load_training_labels(CLASS_DICT_SAVE_PATH)
-    class_list = [value for _, value in class_dict.items()]
+    class_list = get_class_list()
 
     model = load_local_model(SAVE_PATH)
 
-    face_cascade = cv2.CascadeClassifier(
-        haarcascades + 'haarcascade_frontalface_default.xml')
+    face_cascade = get_face_cascade()
 
-    imgtest = cv2.imread("./data/marlon/IMG-3064.jpg", cv2.IMREAD_COLOR)
-    image_array = np.array(imgtest, "uint8")
+    img = cv2.imread("./data/curry/curry.jpeg", cv2.IMREAD_COLOR)
 
-    # get the faces detected in the image
-    faces = face_cascade.detectMultiScale(imgtest,
-                                          scaleFactor=1.1, minNeighbors=5)
-    print(faces)
+    prediction = predict_faces(model, face_cascade, class_list, img)
 
-    for (x_, y_, w, h) in faces:
-        # draw the face detected
-        # face_detect = cv2.rectangle(
-        #     imgtest, (x_, y_), (x_+w, y_+h), (255, 0, 255), 2)
-        # # plt.imshow(face_detect)
-        # # plt.show()
-
-        # resize the detected face to 224x224
-        size = (image_width, image_height)
-        roi = image_array[y_: y_ + h, x_: x_ + w]
-        resized_image = cv2.resize(roi, size)
-
-        # prepare the image for prediction
-        x = image.img_to_array(resized_image)
-        x = np.expand_dims(x, axis=0)
-        x = utils.preprocess_input(x, version=1)
-
-        # making prediction
-        predicted_prob = model.predict(x)
-        print(predicted_prob)
-        print(predicted_prob[0].argmax())
-        print("Predicted face: " + class_list[predicted_prob[0].argmax()])
-        print("============================\n")
-
-
-# train()
-test()
+    return prediction

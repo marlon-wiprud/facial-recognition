@@ -5,6 +5,7 @@ from keras_vggface import utils
 import pickle
 from cv2.data import haarcascades
 import cv2
+import os
 
 DATA_PATH = "./cleaned_data"
 SAVE_PATH = "./models"
@@ -12,6 +13,12 @@ CLASS_DICT_SAVE_PATH = "face-labels.pickle"
 EPOCHS = 20
 IMAGE_WIDTH = 224
 IMAGE_HEIGHT = 224
+
+
+def maybe_create_dir(dir_path):
+    isExist = os.path.exists(dir_path)
+    if isExist is False:
+        os.makedirs(dir_path)
 
 
 def load_training_labels(file_name):
@@ -55,8 +62,8 @@ def predict_faces(model, face_cascade, class_list, img):
 
         # making prediction
         predicted_prob = model.predict(predict_img)
-        print('prediction 1 =>', predicted_prob[0].argmax())
         probability = predicted_prob[0].argmax()
+        print('prediction 1 =>', predicted_prob, probability)
         prediction = {
             'probability':  probability,
             'prediction': class_list[probability],
