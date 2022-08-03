@@ -106,6 +106,11 @@ def preprocess_imgs(images):
             output_img = Image.fromarray(image_array)
             output.append(output_img)
 
+            augmented_imgs = augment_face(image_array)
+
+            for aug_img in augmented_imgs:
+                output.append(Image.fromarray(aug_img))
+
     return output
 
 
@@ -149,9 +154,6 @@ def preprocess_data():
 
                     # os.remove(path)
                     for (x_, y_, w, h) in faces:
-                        # face_detect = cv2.rectangle(
-                        #     img, (x_, y_), (x_ + w, y_ + h), (255, 0, 255), 2)
-
                         size = (IMAGE_WIDTH, IMAGE_HEIGHT)
 
                         roi = image_array[y_: y_ + h, x_: x_ + w]
@@ -168,8 +170,6 @@ def preprocess_data():
                         if zero_shape == True:
                             print('zero shape, skipping', path, roi.shape)
                             continue
-
-                        print('resizing: ', path)
 
                         resized_image = cv2.resize(roi, size)
                         image_array = np.array(resized_image, 'uint8')
