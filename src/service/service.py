@@ -14,12 +14,14 @@ from keras_vggface import utils
 import pickle
 from cv2.data import haarcascades
 import cv2
-from service.utils import predict_faces, get_class_list, get_face_cascade, IMAGE_HEIGHT, IMAGE_WIDTH
+from service.utils import predict_faces, get_class_list, get_face_cascade, maybe_create_dir
+from service.data_collection import cleanup_webcam
+from service.preprocessing import preprocess_imgs
 
 DATA_PATH = "./cleaned_data"
 SAVE_PATH = "./models"
 CLASS_DICT_SAVE_PATH = "face-labels.pickle"
-EPOCHS = 40
+EPOCHS = 12
 
 
 def new_train_generator(data_path):
@@ -107,7 +109,7 @@ def train():
     save_training_labels(train_generator, CLASS_DICT_SAVE_PATH)
 
 
-def recognize_face():
+def recognize_face(path):
 
     class_list = get_class_list()
 
@@ -115,8 +117,42 @@ def recognize_face():
 
     face_cascade = get_face_cascade()
 
-    img = cv2.imread("./data/curry/curry.jpeg", cv2.IMREAD_COLOR)
+    img = cv2.imread(path, cv2.IMREAD_COLOR)
 
     prediction = predict_faces(model, face_cascade, class_list, img)
 
     return prediction
+
+
+def introduce_webcam(label):
+    stream = cv2.VideoCapture(0)
+
+    frames = []
+    count = 0
+    run = True
+
+    while run:
+        (_, frame) = stream.read()
+
+        if count % 2 == 0:
+            frames.append(frame)
+
+        cv2.imshow("Image", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord("q") or len(frames) > 50:
+            run = False
+
+    cleanup_webcam(stream=stream)
+
+    images = preprocess_imgs(frames)
+
+    cleaned_sub_dir_path = os.path.join('cleaned_data', label)
+
+    maybe_create_dir(cleaned_sub_dir_path)
+
+    for idx, img in enumerate(images):
+        save_path = os.path.join(cleaned_sub_dir_path,
+                                 label + "_" + str(idx) + '.jpeg')
+        print('saving: ', save_path)
+        img.save(save_path)

@@ -6,6 +6,14 @@ from service.utils import get_faces, maybe_create_dir, get_face_cascade, IMAGE_H
 import random
 
 
+def horizontal_flip(img):
+    return cv2.flip(img, 1)
+
+
+def vertical_flip(img):
+    return cv2.flip(img, 0)
+
+
 def zoom(img, value):
     if value > 1 or value < 0:
         print('Value for zoom should be less than 1 and greater than 0')
@@ -21,7 +29,15 @@ def zoom(img, value):
     return img
 
 
-def preview_imgs(*imgs):
+def rotation(img, angle):
+    angle = int(random.uniform(-angle, angle))
+    h, w = img.shape[:2]
+    M = cv2.getRotationMatrix2D((int(w/2), int(h/2)), angle, 1)
+    img = cv2.warpAffine(img, M, (w, h))
+    return img
+
+
+def preview_imgs(imgs):
     show_img = np.zeros((IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8)
 
     for img in imgs:
@@ -38,7 +54,59 @@ def augment_by_path(file_path):
 
 
 def augment_face(img):
-    return zoom(img, 0.5)
+    zoomed_img = zoom(img.copy(), 0.3)
+    h_flipped_img = horizontal_flip(img.copy())
+    zomed_h_flipped_img = zoom(h_flipped_img.copy(), 0.3)
+    v_flipped_img = vertical_flip(img.copy())
+    zomed_v_flipped_img = zoom(v_flipped_img.copy(), 0.3)
+
+    rotate_10 = rotation(img.copy(), 10)
+    rotate_20 = rotation(img.copy(), 20)
+    rotate_30 = rotation(img.copy(), 30)
+    rotate_40 = rotation(img.copy(), 40)
+
+    return [zoomed_img, h_flipped_img, zomed_h_flipped_img, v_flipped_img, zomed_v_flipped_img, rotate_10, rotate_20, rotate_30, rotate_40]
+
+
+def preprocess_imgs(images):
+    face_cascade = get_face_cascade()
+
+    output = []
+
+    for idx, img in enumerate(images):
+        print('preprocessing idx ', idx)
+
+        image_array = np.array(img, 'uint8')
+        faces = get_faces(img, face_cascade)
+
+        if len(faces) < 1:
+            print('no faces, skipping index ', idx)
+            continue
+
+        for (x_, y_, w, h) in faces:
+            size = (IMAGE_WIDTH, IMAGE_HEIGHT)
+
+            roi = image_array[y_: y_ + h, x_: x_ + w]
+
+            if len(roi) < 1:
+                print('no roi, skipping index ', idx)
+                continue
+
+            zero_shape = False
+            for x in roi.shape:
+                if x == 0:
+                    zero_shape = True
+
+            if zero_shape == True:
+                print('zero shape, skipping ', idx, roi.shape)
+                continue
+
+            resized_image = cv2.resize(roi, size)
+            image_array = np.array(resized_image, 'uint8')
+            output_img = Image.fromarray(image_array)
+            output.append(output_img)
+
+    return output
 
 
 def preprocess_data():

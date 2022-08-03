@@ -1,17 +1,11 @@
 import cv2
-from cv2.data import haarcascades
-from src.service.utils import predict_faces, get_class_list, load_local_model, get_face_cascade, SAVE_PATH
-
-image_path = "face_test.jpg"
-
-face_cascade = cv2.CascadeClassifier(
-    haarcascades + 'haarcascade_frontalface_default.xml')
-
-# image = cv2.imread(image_path)
+from service.utils import predict_faces, get_class_list, load_local_model, get_face_cascade, SAVE_PATH
 
 
 def detect_faces(img):
     rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    face_cascade = get_face_cascade()
 
     faces = face_cascade.detectMultiScale(rgb, scaleFactor=1.1, minNeighbors=5)
 
@@ -27,7 +21,7 @@ def show_image(img):
     cv2.destroyAllWindows()
 
 
-def cleanup(stream):
+def cleanup_webcam(stream):
     stream.release()
     cv2.waitKey(1)
     cv2.destroyAllWindows()
@@ -54,10 +48,8 @@ def run_webcam():
         if key == ord("q"):    # Press q to break out
             break
 
-    cleanup()
+    cleanup_webcam()
 
-
-run_webcam()
 
 # detect_faces(image)
 # show_image(image)
