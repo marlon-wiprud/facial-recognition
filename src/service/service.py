@@ -1,27 +1,14 @@
-import os
-import pandas as pd
-import numpy as np
-import tensorflow.keras as keras
-import matplotlib.pyplot as plt
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.mobilenet import preprocess_input
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator, img_to_array
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.optimizers import Adam
 from keras_vggface.vggface import VGGFace
-from keras_vggface import utils
 import pickle
-from cv2.data import haarcascades
 import cv2
-from service.utils import predict_faces, get_class_list, get_face_cascade, maybe_create_dir
-from service.data_collection import cleanup_webcam
-from service.preprocessing import preprocess_imgs
-
-DATA_PATH = "./cleaned_data"
-SAVE_PATH = "./models"
-CLASS_DICT_SAVE_PATH = "face-labels.pickle"
-EPOCHS = 12
+from service.utils import get_class_list, get_face_cascade, IMAGE_HEIGHT, IMAGE_WIDTH, SAVE_PATH, CLASS_DICT_SAVE_PATH, EPOCHS
+from service.preprocessing import preprocess_imgs, save_preprocessed_images
+from keras_vggface.utils import preprocess_input
+import numpy as np
 
 
 def new_train_generator(data_path):
@@ -109,6 +96,37 @@ def train():
     save_training_labels(train_generator, CLASS_DICT_SAVE_PATH)
 
 
+def predict_faces(model, faces, class_list, img):
+    image_array = np.array(img, "uint8")
+
+    for (x_, y_, w, h) in faces:
+        size = (IMAGE_WIDTH, IMAGE_HEIGHT)
+        roi = image_array[y_: y_ + h, x_: x_ + w]
+        resized_image = cv2.resize(roi, size)
+
+        # prepare the image for prediction
+        predict_img = img_to_array(resized_image)
+        predict_img = np.expand_dims(predict_img, axis=0)
+        predict_img = preprocess_input(predict_img, version=1)
+
+        # making prediction
+        predicted_prob = model.predict(predict_img)
+        probability = predicted_prob[0].argmax()
+
+        prediction = {
+            'probability':  probability,
+            'prediction': class_list[probability],
+            'coordinates': {
+                'x': x_,
+                'y': y_,
+                'w': w,
+                'h': h,
+            }
+        }
+
+        return prediction
+
+
 def recognize_face(path):
 
     class_list = get_class_list()
@@ -122,6 +140,13 @@ def recognize_face(path):
     prediction = predict_faces(model, face_cascade, class_list, img)
 
     return prediction
+
+
+def cleanup_webcam(stream):
+    stream.release()
+    cv2.waitKey(1)
+    cv2.destroyAllWindows()
+    cv2.waitKey(1)
 
 
 def introduce_webcam(label):
@@ -147,12 +172,44 @@ def introduce_webcam(label):
 
     images = preprocess_imgs(frames)
 
-    cleaned_sub_dir_path = os.path.join('cleaned_data', label)
+    save_preprocessed_images(images, label)
 
-    maybe_create_dir(cleaned_sub_dir_path)
 
-    for idx, img in enumerate(images):
-        save_path = os.path.join(cleaned_sub_dir_path,
-                                 label + "_" + str(idx) + '.jpeg')
-        print('saving: ', save_path)
-        img.save(save_path)
+def draw_faces(img, faces):
+    for (x, y, w, h) in faces:
+        color = (0, 255, 255)  # rgb
+        stroke = 5
+        cv2.rectangle(img, (x, y), (x + w, y + h), color, stroke)
+
+
+def extract_faces(img):
+    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    face_cascade = get_face_cascade()
+
+    faces = face_cascade.detectMultiScale(rgb, scaleFactor=1.1, minNeighbors=5)
+
+    return faces
+
+
+def run_webcam():
+    stream = cv2.VideoCapture(0)
+    class_list = get_class_list()
+
+    model = load_local_model(SAVE_PATH)
+
+    while(True):
+        (_, frame) = stream.read()
+        faces = extract_faces(frame)
+        draw_faces(frame, faces)
+        prediction = predict_faces(model, faces, class_list, frame)
+
+        print("PREDICTION: ", prediction)
+
+        # show the frame
+        cv2.imshow("Image", frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):    # Press q to break out
+            break
+
+    cleanup_webcam()

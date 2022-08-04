@@ -114,12 +114,24 @@ def preprocess_imgs(images):
     return output
 
 
-def preprocess_data():
+def save_preprocessed_images(images, label):
+    cleaned_sub_dir_path = os.path.join('cleaned_data', label)
+
+    maybe_create_dir(cleaned_sub_dir_path)
+
+    for idx, img in enumerate(images):
+        save_path = os.path.join(cleaned_sub_dir_path,
+                                 label + "_" + str(idx) + '.jpeg')
+        print('saving: ', save_path)
+        img.save(save_path)
+
+
+def preprocess_data_from_folder():
 
     data_folder = "data"
 
     # for detecting faces
-    face_cascade = get_face_cascade()
+    # face_cascade = get_face_cascade()
 
     image_dir = os.path.join(".", data_folder)
 
@@ -128,9 +140,11 @@ def preprocess_data():
 
     for sub_dir in os.listdir(image_dir):
         sub_dir_path = os.path.join(image_dir, sub_dir)
-        cleaned_sub_dir_path = os.path.join('cleaned_data', sub_dir)
+        # cleaned_sub_dir_path = os.path.join('cleaned_data', sub_dir)
 
-        maybe_create_dir(cleaned_sub_dir_path)
+        # maybe_create_dir(cleaned_sub_dir_path)
+
+        images = []
 
         for root, _, files in os.walk(sub_dir_path):
             for file in files:
@@ -144,34 +158,40 @@ def preprocess_data():
                         current_id += 1
 
                     img = cv2.imread(path, cv2.IMREAD_COLOR)
-                    image_array = np.array(img, 'uint8')
+                    images.append(img)
 
-                    faces = get_faces(img, face_cascade)
+        processed_imgs = preprocess_imgs(images)
 
-                    if len(faces) < 1:
-                        print('no faces, skipping => ', path)
-                        continue
+        save_preprocessed_images(processed_imgs, sub_dir)
 
-                    # os.remove(path)
-                    for (x_, y_, w, h) in faces:
-                        size = (IMAGE_WIDTH, IMAGE_HEIGHT)
+        # image_array = np.array(img, 'uint8')
 
-                        roi = image_array[y_: y_ + h, x_: x_ + w]
+        # faces = get_faces(img, face_cascade)
 
-                        if len(roi) < 1:
-                            print('no roi, skipping => ', path)
-                            continue
+        # if len(faces) < 1:
+        #     print('no faces, skipping => ', path)
+        #     continue
 
-                        zero_shape = False
-                        for x in roi.shape:
-                            if x == 0:
-                                zero_shape = True
+        # # os.remove(path)
+        # for (x_, y_, w, h) in faces:
+        #     size = (IMAGE_WIDTH, IMAGE_HEIGHT)
 
-                        if zero_shape == True:
-                            print('zero shape, skipping', path, roi.shape)
-                            continue
+        #     roi = image_array[y_: y_ + h, x_: x_ + w]
 
-                        resized_image = cv2.resize(roi, size)
-                        image_array = np.array(resized_image, 'uint8')
-                        im = Image.fromarray(image_array)
-                        im.save(os.path.join(cleaned_sub_dir_path, file))
+        #     if len(roi) < 1:
+        #         print('no roi, skipping => ', path)
+        #         continue
+
+        #     zero_shape = False
+        #     for x in roi.shape:
+        #         if x == 0:
+        #             zero_shape = True
+
+        #     if zero_shape == True:
+        #         print('zero shape, skipping', path, roi.shape)
+        #         continue
+
+        #     resized_image = cv2.resize(roi, size)
+        #     image_array = np.array(resized_image, 'uint8')
+        #     im = Image.fromarray(image_array)
+        #     im.save(os.path.join(cleaned_sub_dir_path, file))

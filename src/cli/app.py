@@ -1,14 +1,11 @@
 import click
 from service.service import train as exec_train
-from service.service import recognize_face, introduce_webcam
-from service.preprocessing import preprocess_data, augment_by_path, preview_imgs
-from service.data_collection import run_webcam
+from service.service import recognize_face, introduce_webcam, run_webcam
+from service.preprocessing import preprocess_data_from_folder, augment_by_path, preview_imgs
 
 
 @click.group()
-@click.pass_context
-def cli(ctx):
-    # print('context: ', ctx)
+def cli():
     pass
 
 
@@ -19,7 +16,7 @@ def train():
 
 @click.command()
 def preprocess():
-    preprocess_data()
+    preprocess_data_from_folder()
 
 
 @click.command()
