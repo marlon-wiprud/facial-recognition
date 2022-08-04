@@ -5,7 +5,7 @@ from tensorflow.keras.models import Model, load_model
 from keras_vggface.vggface import VGGFace
 import pickle
 import cv2
-from service.utils import get_class_list, get_face_cascade, IMAGE_HEIGHT, IMAGE_WIDTH, SAVE_PATH, CLASS_DICT_SAVE_PATH, EPOCHS
+from service.utils import save_training_output, get_face_cascade, IMAGE_HEIGHT, IMAGE_WIDTH, EPOCHS, load_latest_models
 from service.preprocessing import preprocess_imgs, save_preprocessed_images
 from keras_vggface.utils import preprocess_input
 import numpy as np
@@ -51,19 +51,6 @@ def build_model(n_classes):
     return model
 
 
-def save_model(model, save_path):
-    model.save(save_path + "test_model.h5")
-
-
-def save_training_labels(train_generator, save_path):
-    class_dictionary = {
-        value: key for key, value in train_generator.class_indices.items()
-    }
-    with open(save_path, 'wb') as f:
-        pickle.dump(class_dictionary, f)
-    print(class_dictionary)
-
-
 def load_training_labels(file_name):
     with open(file_name, "rb") as \
             f:
@@ -92,8 +79,10 @@ def train():
               verbose=1,
               epochs=EPOCHS)
 
-    save_model(model, SAVE_PATH)
-    save_training_labels(train_generator, CLASS_DICT_SAVE_PATH)
+    save_training_output(model, train_generator)
+
+    # save_model(model, SAVE_PATH)
+    # save_training_labels(train_generator, CLASS_DICT_SAVE_PATH)
 
 
 def predict_faces(model, faces, class_list, img):
@@ -129,9 +118,7 @@ def predict_faces(model, faces, class_list, img):
 
 def recognize_face(path):
 
-    class_list = get_class_list()
-
-    model = load_local_model(SAVE_PATH)
+    model, class_list = load_latest_models()
 
     face_cascade = get_face_cascade()
 
@@ -194,9 +181,8 @@ def extract_faces(img):
 
 def run_webcam():
     stream = cv2.VideoCapture(0)
-    class_list = get_class_list()
 
-    model = load_local_model(SAVE_PATH)
+    model, class_list = load_latest_models()
 
     while(True):
         (_, frame) = stream.read()

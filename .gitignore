@@ -135,3 +135,5 @@ cleaned_data
 .DS_Store
 *.pickle
 *.h5
+
+models/
